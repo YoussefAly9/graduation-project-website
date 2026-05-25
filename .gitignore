@@ -1,0 +1,11 @@
+node_modules
+dist
+*.log
+.env
+client/node_modules
+server/node_modules
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+server/.env
+

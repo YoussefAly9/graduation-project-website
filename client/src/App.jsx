@@ -1,0 +1,401 @@
+import { useEffect, useMemo, useState } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+
+import Header from '@/components/Header.jsx';
+import CartDrawer from '@/components/CartDrawer.jsx';
+import Navbar from '@/components/Navbar.jsx';
+import InstallPrompt from '@/components/InstallPrompt.jsx';
+import OfflineIndicator from '@/components/OfflineIndicator.jsx';
+import DeliveryOptions from '@/components/DeliveryOptions.jsx';
+import AddressManager from '@/components/AddressManager.jsx';
+import ThemeToggle from '@/components/ThemeToggle.jsx';
+import { ToastContainer } from '@/components/Toast.jsx';
+import Footer from '@/sections/Footer.jsx';
+
+// Pages
+import HomePage from '@/pages/HomePage.jsx';
+import ShopPage from '@/pages/ShopPage.jsx';
+import CartPage from '@/pages/CartPage.jsx';
+import OrdersPage from '@/pages/OrdersPage.jsx';
+import AboutPage from '@/pages/AboutPage.jsx';
+
+import { allFallback, featuredFallback, popularFallback } from '@/data/products.js';
+import { categories as categoryList } from '@/data/categories.js';
+import { fetchProducts } from '@/services/productService.js';
+import { createOrder, fetchOrders } from '@/services/orderService.js';
+import useToast from '@/hooks/useToast.js';
+
+function AppContent() {
+  const navigate = useNavigate();
+  
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [popularProducts, setPopularProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [cartItems, setCartItems] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [ordersError, setOrdersError] = useState(null);
+  
+  // Delivery state
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [deliveryOptions, setDeliveryOptions] = useState(null);
+  const [showAddressManager, setShowAddressManager] = useState(false);
+  const [showDeliveryOptions, setShowDeliveryOptions] = useState(false);
+  
+  // Toast notifications
+  const { toasts, success, error: showError, removeToast } = useToast();
+
+  const categoryLookup = useMemo(
+    () => Object.fromEntries(categoryList.map(({ id, label }) => [id, label])),
+    []
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      try {
+        const [featured, popular, all] = await Promise.all([
+          fetchProducts({ tag: 'featured' }),
+          fetchProducts({ tag: 'popular' }),
+          fetchProducts({ limit: 40 })
+        ]);
+
+        if (isMounted) {
+          setFeaturedProducts(featured);
+          setPopularProducts(popular);
+          setAllProducts(all);
+          setFilteredProducts(all);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error('Failed to load products from API. Falling back to seed data.', err);
+          setFeaturedProducts(featuredFallback);
+          setPopularProducts(popularFallback);
+          setAllProducts(allFallback);
+          setFilteredProducts(allFallback);
+          setError(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProducts();
+
+    fetchOrders({ limit: 25 })
+      .then((data) => {
+        if (isMounted) {
+          setOrders(data);
+          setOrdersError(null);
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.error('Failed to load orders', err);
+          setOrders([]);
+          setOrdersError('Orders dashboard is unavailable while the API is offline.');
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const refreshOrders = async () => {
+    try {
+      const data = await fetchOrders({ limit: 25 });
+      setOrders(data);
+      setOrdersError(null);
+    } catch (err) {
+      console.error('Failed to load orders', err);
+      setOrdersError('Orders dashboard is unavailable while the API is offline.');
+    }
+  };
+
+  useEffect(() => {
+    const lowerSearch = searchTerm.toLowerCase();
+
+    const nextProducts = allProducts.filter((product) => {
+      const matchesCategory = !activeCategory || product.category === activeCategory;
+      const textToSearch = [product.title, product.description, product.sku]
+        .filter(Boolean)
+        .map((value) => value.toLowerCase());
+      const matchesSearch = !lowerSearch || textToSearch.some((value) => value.includes(lowerSearch));
+      return matchesCategory && matchesSearch;
+    });
+
+    setFilteredProducts(nextProducts);
+  }, [allProducts, searchTerm, activeCategory]);
+
+  const handleSearch = (query) => {
+    setSearchTerm(query);
+    if (query) {
+      setActiveCategory(null);
+    }
+    navigate('/shop');
+  };
+
+  const handleCategorySelect = (categoryId) => {
+    setActiveCategory(categoryId);
+    setSearchTerm('');
+    navigate('/shop');
+  };
+
+  const inventorySubtitle = useMemo(() => {
+    if (searchTerm && activeCategory) {
+      return `Showing results for "${searchTerm}" in ${categoryLookup[activeCategory] || activeCategory}`;
+    }
+
+    if (searchTerm) {
+      return `Search results for "${searchTerm}"`;
+    }
+
+    if (activeCategory) {
+      return `Filtered by ${categoryLookup[activeCategory] || activeCategory}`;
+    }
+
+    return 'Browse our complete inventory curated for robot-assisted fulfilment.';
+  }, [searchTerm, activeCategory, categoryLookup]);
+
+  const cartCount = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [cartItems]
+  );
+
+  const handleRemoveFromCart = (productId) => {
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+  };
+
+  const handleUpdateCartQuantity = (productId, quantity) => {
+    if (quantity < 1) {
+      handleRemoveFromCart(productId);
+      return;
+    }
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === productId ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const handleAddToCart = (product) => {
+    const productId = product._id || product.id;
+
+    setCartItems((prevItems) => {
+      const existing = prevItems.find((item) => item.id === productId);
+      if (existing) {
+        return prevItems.map((item) =>
+          item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+
+      return [
+        ...prevItems,
+        {
+          id: productId,
+          title: product.title,
+          price: product.price,
+          unit: product.unit,
+          quantity: 1
+        }
+      ];
+    });
+
+    // Show toast notification
+    success(`Added ${product.title} to cart!`);
+    
+    if (product._id) {
+      const payload = {
+        items: [
+          {
+            productId: product._id,
+            quantity: 1
+          }
+        ],
+        customer: {
+          name: 'Guest User'
+        },
+        notes: 'Auto-generated quick order from demo UI.'
+      };
+
+      createOrder(payload)
+        .then(({ order }) => {
+          setOrders((previous) => [order, ...previous].slice(0, 5));
+          setOrdersError(null);
+        })
+        .catch((err) => {
+          console.error('Failed to push quick order to backend', err);
+        });
+    }
+  };
+
+  const cartTotal = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cartItems]
+  );
+
+  const handleCheckout = () => {
+    const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+    
+    if (!selectedAddress || !deliveryOptions) {
+      showError('Please complete delivery address and options before checkout');
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      const deliveryInfo = `
+Delivery Address:
+${selectedAddress.fullName}
+${selectedAddress.street}, Building ${selectedAddress.building}
+${selectedAddress.city}
+
+Delivery Option:
+${deliveryOptions.speed === 'standard' ? 'Standard Delivery (2-4 hours)' : 
+  deliveryOptions.speed === 'express' ? 'Express Delivery (30-60 mins)' : 
+  'Scheduled Delivery'}
+${deliveryOptions.date ? `\nDate: ${new Date(deliveryOptions.date).toLocaleDateString()}` : ''}
+${deliveryOptions.timeSlot ? `\nTime: ${deliveryOptions.timeSlot}` : ''}
+
+Delivery Fee: EGP ${deliveryOptions.fee}
+Total: EGP ${(cartTotal + deliveryOptions.fee).toFixed(2)}
+      `;
+      
+      // Show success toast and log order details
+      success('Order placed successfully! 🎉', 4000);
+      console.log('Order Summary:', deliveryInfo);
+      
+      // Future: Send to backend API
+      // await createCheckoutOrder({ cartItems, selectedAddress, deliveryOptions });
+    }
+  };
+
+  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+
+  return (
+    <div className="app">
+      <a href="#main-content" className="skip-to-main sr-only">
+        Skip to main content
+      </a>
+      <OfflineIndicator />
+      <ThemeToggle />
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <Header
+        cartCount={cartCount}
+        onSearch={handleSearch}
+        onCartClick={() => setIsCartOpen(true)}
+      />
+      <Navbar />
+      <main id="main-content">
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <HomePage
+                featuredProducts={featuredProducts}
+                popularProducts={popularProducts}
+                loading={loading}
+                onAddToCart={handleAddToCart}
+                onCategorySelect={handleCategorySelect}
+                activeCategory={activeCategory}
+              />
+            } 
+          />
+          <Route 
+            path="/shop" 
+            element={
+              <ShopPage
+                products={filteredProducts}
+                loading={loading}
+                onAddToCart={handleAddToCart}
+                searchTerm={searchTerm}
+                activeCategory={activeCategory}
+                onCategorySelect={handleCategorySelect}
+                inventorySubtitle={inventorySubtitle}
+              />
+            } 
+          />
+          <Route 
+            path="/cart" 
+            element={
+              <CartPage
+                cartItems={cartItems}
+                cartTotal={cartTotal}
+                deliveryAddress={selectedAddress}
+                deliveryOptions={deliveryOptions}
+                onEditAddress={() => setShowAddressManager(true)}
+                onEditDelivery={() => setShowDeliveryOptions(true)}
+                onCheckout={handleCheckout}
+                onRemoveItem={handleRemoveFromCart}
+                onUpdateQuantity={handleUpdateCartQuantity}
+              />
+            } 
+          />
+          <Route 
+            path="/orders" 
+            element={
+              <OrdersPage
+                orders={orders}
+                ordersError={ordersError}
+                onRefresh={refreshOrders}
+              />
+            } 
+          />
+          <Route path="/about" element={<AboutPage />} />
+        </Routes>
+        {error ? <p className="status-message status-message--warning">{error}</p> : null}
+      </main>
+      <Footer />
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+        total={cartTotal}
+        onCheckout={handleCheckout}
+        deliveryAddress={selectedAddress}
+        deliveryOptions={deliveryOptions}
+        onEditAddress={() => setShowAddressManager(true)}
+        onEditDelivery={() => setShowDeliveryOptions(true)}
+        onRemoveItem={handleRemoveFromCart}
+        onUpdateQuantity={handleUpdateCartQuantity}
+      />
+      {showAddressManager && (
+        <AddressManager
+          addresses={addresses}
+          selectedAddressId={selectedAddressId}
+          onAddressSelect={setSelectedAddressId}
+          onAddressesUpdate={setAddresses}
+          onClose={() => setShowAddressManager(false)}
+        />
+      )}
+      {showDeliveryOptions && (
+        <DeliveryOptions
+          value={deliveryOptions}
+          onChange={setDeliveryOptions}
+          onClose={() => setShowDeliveryOptions(false)}
+        />
+      )}
+      <InstallPrompt />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+export default App;
