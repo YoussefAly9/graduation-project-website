@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-globals */
 // FreshMart Service Worker for PWA functionality
-const CACHE_NAME = 'freshmart-v6';
-const RUNTIME_CACHE = 'freshmart-runtime-v6';
-const IMAGE_CACHE = 'freshmart-images-v6';
+const CACHE_NAME = 'freshmart-v7';
+const RUNTIME_CACHE = 'freshmart-runtime-v7';
+const IMAGE_CACHE = 'freshmart-images-v7';
 
 const PRECACHE_URLS = [
   '/',
