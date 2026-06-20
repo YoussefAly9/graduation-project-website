@@ -100,11 +100,27 @@ export const createOrder = async (req, res, next) => {
       });
     }
 
-    const { customer = {}, channel = 'web', deliveryMethod = 'pickup', items = [], notes } = req.body;
+    const {
+      customer = {},
+      channel = 'web',
+      deliveryMethod = 'pickup',
+      items = [],
+      notes,
+      specialInstructions
+    } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Order items are required' });
     }
+
+    // The UI sends a delivery speed ('express'/'standard'); the schema only
+    // accepts 'pickup'/'delivery'. Normalize and keep the original as a note.
+    const normalizedDeliveryMethod = ['pickup', 'delivery'].includes(deliveryMethod)
+      ? deliveryMethod
+      : 'delivery';
+    const deliverySpeedNote =
+      normalizedDeliveryMethod !== deliveryMethod ? `Delivery speed: ${deliveryMethod}` : null;
+    const combinedInstructions = [specialInstructions, deliverySpeedNote].filter(Boolean).join(' | ');
 
     const { resolved, error } = await resolveOrderProducts(items);
 
@@ -134,11 +150,12 @@ export const createOrder = async (req, res, next) => {
     const order = await Order.create({
       customer,
       channel,
-      deliveryMethod,
+      deliveryMethod: normalizedDeliveryMethod,
       status: 'queued',
       total,
       items: orderItems,
-      notes
+      notes,
+      specialInstructions: combinedInstructions || undefined
     });
 
     await Promise.all(
