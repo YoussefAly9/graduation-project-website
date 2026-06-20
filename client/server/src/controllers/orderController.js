@@ -166,7 +166,7 @@ export const createOrder = async (req, res, next) => {
     await order.save();
 
     await order.populate('items.product');
-    await task.populate('items.product').populate('controller').populate('order');
+    await task.populate([{ path: 'items.product' }, { path: 'controller' }, { path: 'order' }]);
 
     res.status(201).json({ data: { order, task } });
   } catch (error) {
@@ -227,7 +227,7 @@ export const updateOrderStatus = async (req, res, next) => {
       }
     }
 
-    await order.populate('items.product').populate('robotTask');
+    await order.populate([{ path: 'items.product' }, { path: 'robotTask' }]);
     res.json({ data: order });
   } catch (error) {
     next(error);
@@ -284,7 +284,7 @@ export const cancelOrder = async (req, res, next) => {
     }
 
     await order.save();
-    await order.populate('items.product').populate('robotTask');
+    await order.populate([{ path: 'items.product' }, { path: 'robotTask' }]);
 
     res.json({ 
       data: order,
@@ -402,7 +402,7 @@ export const modifyOrder = async (req, res, next) => {
     }
 
     await order.save();
-    await order.populate('items.product').populate('robotTask');
+    await order.populate([{ path: 'items.product' }, { path: 'robotTask' }]);
 
     res.json({ 
       data: order,
@@ -461,7 +461,7 @@ export const updateDeliveryTracking = async (req, res, next) => {
     }
 
     await order.save();
-    await order.populate('items.product').populate('robotTask');
+    await order.populate([{ path: 'items.product' }, { path: 'robotTask' }]);
 
     res.json({ 
       data: order,
