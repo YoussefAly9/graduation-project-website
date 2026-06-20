@@ -1,14 +1,22 @@
 import axios from 'axios';
 
 const normalizeApiBaseUrl = (value) => {
-  const fallback = 'http://localhost:5000/api';
-  const raw = (value || fallback).trim().replace(/\/+$/, '');
+  const raw = (value || '').trim().replace(/\/+$/, '');
 
-  if (raw.endsWith('/api')) {
-    return raw;
+  if (raw) {
+    return raw.endsWith('/api') ? raw : `${raw}/api`;
   }
 
-  return `${raw}/api`;
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    // Production: same-origin /api (proxied to server in client/vercel.json)
+    return '/api';
+  }
+
+  return 'http://localhost:5000/api';
 };
 
 const apiClient = axios.create({
@@ -19,5 +27,3 @@ const apiClient = axios.create({
 });
 
 export default apiClient;
-
-

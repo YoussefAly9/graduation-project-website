@@ -68,6 +68,11 @@ function AppContent() {
         ]);
 
         if (isMounted) {
+          const hasProducts = [featured, popular, all].some((list) => list?.length > 0);
+          if (!hasProducts) {
+            throw new Error('API returned no products');
+          }
+
           setFeaturedProducts(featured);
           setPopularProducts(popular);
           setAllProducts(all);
@@ -204,6 +209,7 @@ function AppContent() {
         ...prevItems,
         {
           id: productId,
+          productId: product._id || null,
           title: product.title,
           price: product.price,
           unit: product.unit,
@@ -214,30 +220,6 @@ function AppContent() {
 
     // Show toast notification
     success(`Added ${product.title} to cart!`);
-    
-    if (product._id) {
-      const payload = {
-        items: [
-          {
-            productId: product._id,
-            quantity: 1
-          }
-        ],
-        customer: {
-          name: 'Guest User'
-        },
-        notes: 'Auto-generated quick order from demo UI.'
-      };
-
-      createOrder(payload)
-        .then(({ order }) => {
-          setOrders((previous) => [order, ...previous].slice(0, 5));
-          setOrdersError(null);
-        })
-        .catch((err) => {
-          console.error('Failed to push quick order to backend', err);
-        });
-    }
   };
 
   const cartTotal = useMemo(
@@ -245,38 +227,65 @@ function AppContent() {
     [cartItems]
   );
 
-  const handleCheckout = () => {
-    const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
-    
+  const handleCheckout = async () => {
+    const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
+
     if (!selectedAddress || !deliveryOptions) {
       showError('Please complete delivery address and options before checkout');
       return;
     }
 
-    if (typeof window !== 'undefined') {
-      const deliveryInfo = `
-Delivery Address:
-${selectedAddress.fullName}
-${selectedAddress.street}, Building ${selectedAddress.building}
-${selectedAddress.city}
+    if (cartItems.length === 0) {
+      showError('Your cart is empty');
+      return;
+    }
 
-Delivery Option:
-${deliveryOptions.speed === 'standard' ? 'Standard Delivery (2-4 hours)' : 
-  deliveryOptions.speed === 'express' ? 'Express Delivery (30-60 mins)' : 
-  'Scheduled Delivery'}
-${deliveryOptions.date ? `\nDate: ${new Date(deliveryOptions.date).toLocaleDateString()}` : ''}
-${deliveryOptions.timeSlot ? `\nTime: ${deliveryOptions.timeSlot}` : ''}
+    const isMongoId = (value) => typeof value === 'string' && /^[a-f\d]{24}$/i.test(value);
 
-Delivery Fee: EGP ${deliveryOptions.fee}
-Total: EGP ${(cartTotal + deliveryOptions.fee).toFixed(2)}
-      `;
-      
-      // Show success toast and log order details
+    const orderItems = cartItems
+      .filter((item) => isMongoId(item.productId))
+      .map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity
+      }));
+
+    if (orderItems.length === 0) {
+      showError('Cannot place order — products are not loaded from the server. Please refresh and try again.');
+      return;
+    }
+
+    const deliveryNotes = [
+      `Delivery: ${deliveryOptions.speed}`,
+      deliveryOptions.date ? `Date: ${deliveryOptions.date}` : null,
+      deliveryOptions.timeSlot ? `Time: ${deliveryOptions.timeSlot}` : null,
+      deliveryOptions.instructions ? `Instructions: ${deliveryOptions.instructions}` : null,
+      `Fee: EGP ${deliveryOptions.fee}`
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      const { order } = await createOrder({
+        items: orderItems,
+        customer: {
+          name: selectedAddress.fullName,
+          phone: selectedAddress.phone,
+          address: `${selectedAddress.street}, Building ${selectedAddress.building}, ${selectedAddress.city}`
+        },
+        deliveryMethod: deliveryOptions.speed === 'express' ? 'express' : 'standard',
+        channel: 'web',
+        notes: deliveryNotes
+      });
+
+      setOrders((previous) => [order, ...previous].slice(0, 25));
+      setOrdersError(null);
+      setCartItems([]);
+      setIsCartOpen(false);
       success('Order placed successfully! 🎉', 4000);
-      console.log('Order Summary:', deliveryInfo);
-      
-      // Future: Send to backend API
-      // await createCheckoutOrder({ cartItems, selectedAddress, deliveryOptions });
+      navigate('/orders');
+    } catch (err) {
+      console.error('Checkout failed:', err);
+      showError('Could not place order. Make sure the server is running and try again.');
     }
   };
 
