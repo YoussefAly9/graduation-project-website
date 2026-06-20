@@ -547,6 +547,36 @@ function CartPage({
           .cart-section-card {
             padding: 20px;
           }
+
+          .cart-item-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .item-total {
+            align-self: flex-end;
+            margin-top: 8px;
+          }
+
+          .section-header {
+            flex-wrap: wrap;
+            gap: 12px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .page-cart {
+            padding: 24px 0 48px;
+          }
+
+          .page-title {
+            font-size: 1.75rem;
+          }
+
+          .btn-edit {
+            padding: 6px 14px;
+            font-size: 0.85rem;
+          }
         }
       `}</style>
     </div>

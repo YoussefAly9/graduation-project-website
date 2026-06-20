@@ -153,6 +153,11 @@ const RobotTracker = ({ orderId }) => {
         .robot-progress__bar { height: 100%; background: linear-gradient(90deg,#3b82f6,#10b981); transition: width 0.4s ease; }
         .robot-progress__bar--fail { background: #ef4444; }
         .robot-pipeline { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0; margin: 0; }
+        @media (max-width: 480px) {
+          .robot-pipeline { flex-direction: column; gap: 8px; }
+          .robot-tracker__log li { grid-template-columns: 1fr; gap: 4px; }
+          .robot-tracker { padding: 12px; }
+        }
         .robot-pipeline__step { display: flex; align-items: center; gap: 6px; color: #9ca3af; font-size: 0.85rem; }
         .robot-pipeline__step.is-done { color: #10b981; }
         .robot-pipeline__step.is-current { color: #2563eb; font-weight: 600; }

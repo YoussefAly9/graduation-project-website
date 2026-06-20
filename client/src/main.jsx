@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 
 import App from './App.jsx';
 import './styles/global.css';
+import './styles/responsive.css';
 
 // Register Service Worker for PWA (production build / preview, or dev with VITE_ENABLE_PWA_DEV=true)
 const enablePwa =

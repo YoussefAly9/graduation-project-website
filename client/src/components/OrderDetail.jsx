@@ -631,6 +631,17 @@ const OrderDetail = ({ orderId, onClose, onUpdate }) => {
           .order-detail-actions {
             flex-direction: column;
           }
+
+          .order-detail-overlay {
+            padding: 0;
+          }
+
+          .order-detail-modal {
+            max-width: 100%;
+            max-height: 100%;
+            height: 100%;
+            border-radius: 0;
+          }
         }
       `}</style>
     </>

@@ -9,6 +9,7 @@ import OfflineIndicator from '@/components/OfflineIndicator.jsx';
 import DeliveryOptions from '@/components/DeliveryOptions.jsx';
 import AddressManager from '@/components/AddressManager.jsx';
 import ThemeToggle from '@/components/ThemeToggle.jsx';
+import ScrollToTop from '@/components/ScrollToTop.jsx';
 import { ToastContainer } from '@/components/Toast.jsx';
 import Footer from '@/sections/Footer.jsx';
 
@@ -417,6 +418,7 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppContent />
     </BrowserRouter>
   );

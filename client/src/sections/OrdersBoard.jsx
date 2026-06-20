@@ -64,9 +64,9 @@ const OrdersBoard = ({ orders = [], error, onUpdate }) => {
                 <tbody>
                   {orders.map((order) => (
                     <tr key={order._id} className="order-row">
-                      <td className="order-id-cell">{order._id.slice(-8)}</td>
-                      <td>{order.customer?.name || 'Guest'}</td>
-                      <td>
+                      <td data-label="Order ID" className="order-id-cell">{order._id.slice(-8)}</td>
+                      <td data-label="Customer">{order.customer?.name || 'Guest'}</td>
+                      <td data-label="Status">
                         <span 
                           className="status-badge" 
                           style={{ backgroundColor: getStatusColor(order.status) }}
@@ -74,14 +74,14 @@ const OrdersBoard = ({ orders = [], error, onUpdate }) => {
                           {order.status}
                         </span>
                       </td>
-                      <td>EGP {order.total?.toFixed(2)}</td>
-                      <td>
+                      <td data-label="Total">EGP {order.total?.toFixed(2)}</td>
+                      <td data-label="Items" className="order-items-cell">
                         {order.items
                           ?.map((item) => `${item.quantity}× ${item.product?.title || 'Unknown'}`)
                           .join(', ')}
                       </td>
-                      <td>{formatDate(order.createdAt)}</td>
-                      <td>
+                      <td data-label="Date">{formatDate(order.createdAt)}</td>
+                      <td data-label="Actions" className="order-actions-cell">
                         <button 
                           className="btn-view-details"
                           onClick={() => handleOrderClick(order._id)}
@@ -115,21 +115,21 @@ const OrdersBoard = ({ orders = [], error, onUpdate }) => {
         .orders-table {
           width: 100%;
           border-collapse: collapse;
-          background: white;
+          background: var(--bg-primary);
           border-radius: 8px;
           overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 1px 3px var(--shadow);
         }
 
         .orders-table thead {
-          background: #f9fafb;
+          background: var(--bg-secondary);
         }
 
         .orders-table th {
           padding: 16px;
           text-align: left;
           font-weight: 600;
-          color: #374151;
+          color: var(--text-primary);
           font-size: 0.875rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -137,22 +137,18 @@ const OrdersBoard = ({ orders = [], error, onUpdate }) => {
 
         .orders-table td {
           padding: 16px;
-          border-top: 1px solid #e5e7eb;
-          color: #4b5563;
+          border-top: 1px solid var(--border-color);
+          color: var(--text-secondary);
         }
 
         .order-row {
           transition: background-color 0.2s;
         }
 
-        .order-row:hover {
-          background-color: #f9fafb;
-        }
-
         .order-id-cell {
           font-family: monospace;
           font-size: 0.875rem;
-          color: #6b7280;
+          color: var(--text-tertiary);
         }
 
         .status-badge {
@@ -167,7 +163,7 @@ const OrdersBoard = ({ orders = [], error, onUpdate }) => {
 
         .btn-view-details {
           padding: 6px 12px;
-          background: #3b82f6;
+          background: var(--secondary);
           color: white;
           border: none;
           border-radius: 6px;
@@ -181,14 +177,93 @@ const OrdersBoard = ({ orders = [], error, onUpdate }) => {
           background: #2563eb;
         }
 
+        .order-row:hover {
+          background-color: var(--bg-secondary);
+        }
+
+        .order-items-cell {
+          max-width: 220px;
+          word-break: break-word;
+        }
+
+        @media (max-width: 768px) {
+          .orders-table thead {
+            display: none;
+          }
+
+          .orders-table,
+          .orders-table tbody,
+          .orders-table tr,
+          .orders-table td {
+            display: block;
+            width: 100%;
+          }
+
+          .orders-table tr {
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            box-shadow: 0 1px 3px var(--shadow);
+          }
+
+          .orders-table tr:hover {
+            background: var(--bg-primary);
+          }
+
+          .orders-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 8px 0;
+            border-top: none;
+            text-align: right;
+          }
+
+          .orders-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            text-align: left;
+            flex-shrink: 0;
+          }
+
+          .order-items-cell {
+            max-width: none;
+            flex-direction: column;
+            align-items: stretch;
+            text-align: left;
+          }
+
+          .order-items-cell::before {
+            margin-bottom: 4px;
+          }
+
+          .order-actions-cell {
+            justify-content: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 4px;
+          }
+
+          .order-actions-cell::before {
+            display: none;
+          }
+
+          .btn-view-details {
+            width: 100%;
+            padding: 10px 16px;
+          }
+        }
+
         @media (max-width: 768px) {
           .orders-table {
             font-size: 0.875rem;
-          }
-
-          .orders-table th,
-          .orders-table td {
-            padding: 12px 8px;
           }
 
           .order-id-cell {
