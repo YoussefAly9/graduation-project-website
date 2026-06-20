@@ -86,7 +86,7 @@ function AppContent() {
           setPopularProducts(popularFallback);
           setAllProducts(allFallback);
           setFilteredProducts(allFallback);
-          setError(null);
+          setError('Server offline — showing demo products. Orders cannot be placed until the API is connected.');
         }
       } finally {
         if (isMounted) {
@@ -210,6 +210,7 @@ function AppContent() {
         {
           id: productId,
           productId: product._id || null,
+          sku: product.sku || null,
           title: product.title,
           price: product.price,
           unit: product.unit,
@@ -243,14 +244,27 @@ function AppContent() {
     const isMongoId = (value) => typeof value === 'string' && /^[a-f\d]{24}$/i.test(value);
 
     const orderItems = cartItems
-      .filter((item) => isMongoId(item.productId))
-      .map((item) => ({
-        productId: item.productId,
-        quantity: item.quantity
-      }));
+      .map((item) => {
+        const liveProduct = allProducts.find(
+          (product) =>
+            (item.productId && product._id === item.productId) ||
+            product.id === item.id ||
+            (item.sku && product.sku === item.sku)
+        );
 
-    if (orderItems.length === 0) {
-      showError('Cannot place order — products are not loaded from the server. Please refresh and try again.');
+        const productId = liveProduct?._id || item.productId;
+        const sku = item.sku || liveProduct?.sku;
+
+        return {
+          productId: isMongoId(productId) ? productId : undefined,
+          sku,
+          quantity: item.quantity
+        };
+      })
+      .filter((item) => item.productId || item.sku);
+
+    if (orderItems.length !== cartItems.length) {
+      showError('Cannot place order — the server is offline. Products must load from the database first.');
       return;
     }
 
