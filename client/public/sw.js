@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-globals */
 // FreshMart Service Worker for PWA functionality
-const CACHE_NAME = 'freshmart-v3';
-const RUNTIME_CACHE = 'freshmart-runtime-v3';
-const IMAGE_CACHE = 'freshmart-images-v3';
+const CACHE_NAME = 'freshmart-v5';
+const RUNTIME_CACHE = 'freshmart-runtime-v5';
+const IMAGE_CACHE = 'freshmart-images-v5';
 
 // Assets to cache on install
 const PRECACHE_URLS = [
@@ -72,13 +72,12 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Handle API calls (same-origin or cross-origin)
-  if (url.pathname.startsWith('/api/') || url.href.includes('/api/')) {
-    event.respondWith(networkFirst(request));
+  // Never intercept API requests — let axios reach the server directly.
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // Skip other cross-origin requests (CDNs, external resources, etc.)
+  // Skip all other cross-origin requests (CDNs, external API server, etc.).
   if (url.origin !== location.origin) {
     return;
   }
@@ -159,16 +158,13 @@ async function networkFirst(request) {
       return cachedResponse;
     }
     
-    // Return a proper offline response that won't break the app
-    console.log('[Service Worker] No cache available, returning offline response');
-    return new Response(JSON.stringify({ 
-      data: [],
-      error: 'Offline', 
-      message: 'You are currently offline. Using fallback data.',
-      offline: true
+    // Let the app fall back to seed data instead of faking an empty success.
+    console.log('[Service Worker] No cache available for API request');
+    return new Response(JSON.stringify({
+      message: 'Network unavailable'
     }), {
-      status: 200, // Changed to 200 so app doesn't think it's an error
-      headers: { 
+      status: 503,
+      headers: {
         'Content-Type': 'application/json',
         'X-Offline': 'true'
       }

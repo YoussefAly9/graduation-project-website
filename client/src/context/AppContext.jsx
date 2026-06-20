@@ -48,6 +48,11 @@ export function AppProvider({ children }) {
           fetchProducts({ limit: 40 })
         ]);
 
+        const hasProducts = [featured, popular, all].some((list) => list?.length > 0);
+        if (!hasProducts) {
+          throw new Error('API returned no products');
+        }
+
         if (isMounted) {
           setFeaturedProducts(featured);
           setPopularProducts(popular);
