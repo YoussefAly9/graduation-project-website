@@ -100,7 +100,7 @@ The Vite/React client talks to the API via Axios (`client/src/services`).
 
 Configure the frontend base URL with `VITE_API_BASE_URL` in `client/.env` when hosting the API elsewhere.
 
-## Robot & YOLOv8 Integration
+## Robot Integration
 
 1. **Hardware topology**
    - 3× Arduino boards (two Mega 2560 for picker arms, one Due for the drive/lift stack) already seeded in the database.

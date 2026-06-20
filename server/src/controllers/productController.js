@@ -7,38 +7,44 @@ const isDatabaseConnected = () => mongoose.connection.readyState === 1;
 
 export const listProducts = async (req, res, next) => {
   try {
-    if (!isDatabaseConnected()) {
-      return res.json({ data: seedProducts });
+    if (isDatabaseConnected()) {
+      try {
+        const { tag, category, search, limit = 50 } = req.query;
+        const filter = {};
+
+        if (tag === 'featured') {
+          filter.isFeatured = true;
+        }
+
+        if (tag === 'popular') {
+          filter.isPopular = true;
+        }
+
+        if (category) {
+          filter.category = category;
+        }
+
+        if (search) {
+          filter.$or = [
+            { title: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
+            { sku: { $regex: search, $options: 'i' } }
+          ];
+        }
+
+        const products = await Product.find(filter)
+          .sort({ createdAt: -1 })
+          .limit(Number(limit))
+          .lean();
+
+        return res.json({ data: products });
+      } catch (dbError) {
+        // eslint-disable-next-line no-console
+        console.error('Product query failed, using seed data:', dbError.message);
+      }
     }
 
-    const { tag, category, search, limit = 50 } = req.query;
-    const filter = {};
-
-    if (tag === 'featured') {
-      filter.isFeatured = true;
-    }
-
-    if (tag === 'popular') {
-      filter.isPopular = true;
-    }
-
-    if (category) {
-      filter.category = category;
-    }
-
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { sku: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const products = await Product.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(Number(limit))
-      .lean();
-    res.json({ data: products });
+    return res.json({ data: seedProducts });
   } catch (error) {
     next(error);
   }

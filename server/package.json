@@ -8,11 +8,13 @@
     "start": "node src/index.js",
     "reseed:products": "node scripts/reseedProducts.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "mongod": "^2.0.0",
     "mongoose": "^8.5.1",
     "morgan": "^1.10.0",
     "web-push": "^3.6.7"

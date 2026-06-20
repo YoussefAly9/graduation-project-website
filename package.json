@@ -1,6 +1,16 @@
 {
-  "devDependencies": {
-    "docx": "^9.5.1",
-    "playwright": "^1.45.2"
+  "name": "freshmart",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build --prefix client",
+    "dev": "npm run dev --prefix client",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "start:server": "npm run start --prefix server"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

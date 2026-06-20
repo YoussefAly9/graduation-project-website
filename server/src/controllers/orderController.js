@@ -16,8 +16,41 @@ const buildOrderItems = (productsMap, items) =>
     };
   });
 
+const isDatabaseConnected = () => mongoose.connection.readyState === 1;
+
+const resolveOrderProducts = async (items) => {
+  const resolved = [];
+
+  for (const item of items) {
+    let product = null;
+
+    if (item.productId && mongoose.Types.ObjectId.isValid(item.productId)) {
+      product = await Product.findById(item.productId);
+    }
+
+    if (!product && item.sku) {
+      product = await Product.findOne({ sku: String(item.sku).toUpperCase() });
+    }
+
+    if (!product) {
+      return { error: `Product not found for item: ${item.productId || item.sku}` };
+    }
+
+    resolved.push({
+      product,
+      quantity: item.quantity
+    });
+  }
+
+  return { resolved };
+};
+
 export const listOrders = async (req, res, next) => {
   try {
+    if (!isDatabaseConnected()) {
+      return res.json({ data: [] });
+    }
+
     const { status, limit = 25 } = req.query;
     const query = {};
     if (status) {
@@ -56,28 +89,31 @@ export const getOrderById = async (req, res, next) => {
 
 export const createOrder = async (req, res, next) => {
   try {
+    if (!isDatabaseConnected()) {
+      return res.status(503).json({
+        message: 'Database is not connected. Set MONGODB_URI on the server project in Vercel.'
+      });
+    }
+
     const { customer = {}, channel = 'web', deliveryMethod = 'pickup', items = [], notes } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Order items are required' });
     }
 
-    const productIds = items.map((item) => item.productId);
+    const { resolved, error } = await resolveOrderProducts(items);
 
-    const invalidProductId = productIds.some((productId) => !mongoose.Types.ObjectId.isValid(productId));
-
-    if (invalidProductId) {
-      return res.status(400).json({ message: 'One or more product ids are invalid' });
-    }
-    const products = await Product.find({ _id: { $in: productIds } });
-
-    if (products.length !== items.length) {
-      return res.status(400).json({ message: 'One or more products are invalid' });
+    if (error) {
+      return res.status(400).json({ message: error });
     }
 
-    const productsMap = new Map(products.map((product) => [product._id.toString(), product]));
+    const productsMap = new Map(resolved.map(({ product }) => [product._id.toString(), product]));
+    const normalizedItems = resolved.map(({ product, quantity }) => ({
+      productId: product._id.toString(),
+      quantity
+    }));
 
-    const orderItems = buildOrderItems(productsMap, items);
+    const orderItems = buildOrderItems(productsMap, normalizedItems);
     const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     // prevent negative stock
