@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+import connectDatabase from '../config/database.js';
 import Product from '../models/Product.js';
 import { seedProducts } from '../data/products.js';
 
@@ -7,6 +8,8 @@ const isDatabaseConnected = () => mongoose.connection.readyState === 1;
 
 export const listProducts = async (req, res, next) => {
   try {
+    await connectDatabase();
+
     if (isDatabaseConnected()) {
       try {
         const { tag, category, search, limit = 50 } = req.query;
@@ -71,6 +74,8 @@ export const getProductById = async (req, res, next) => {
 
 export const createProduct = async (req, res, next) => {
   try {
+    await connectDatabase();
+
     if (!isDatabaseConnected()) {
       return res.status(503).json({
         message: 'Database connection is not available. Please configure MONGODB_URI before creating products.'

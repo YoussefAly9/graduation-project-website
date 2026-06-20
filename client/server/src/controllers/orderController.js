@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+import connectDatabase from '../config/database.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import RobotController from '../models/RobotController.js';
@@ -47,6 +48,8 @@ const resolveOrderProducts = async (items) => {
 
 export const listOrders = async (req, res, next) => {
   try {
+    await connectDatabase();
+
     if (!isDatabaseConnected()) {
       return res.json({ data: [] });
     }
@@ -89,9 +92,11 @@ export const getOrderById = async (req, res, next) => {
 
 export const createOrder = async (req, res, next) => {
   try {
+    await connectDatabase();
+
     if (!isDatabaseConnected()) {
       return res.status(503).json({
-        message: 'Database is not connected. Set MONGODB_URI on the server project in Vercel.'
+        message: 'Database is not connected. Set MONGODB_URI on the website project in Vercel.'
       });
     }
 
