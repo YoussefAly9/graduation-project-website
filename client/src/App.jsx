@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import Header from '@/components/Header.jsx';
 import CartDrawer from '@/components/CartDrawer.jsx';
@@ -361,6 +361,7 @@ function AppContent() {
             } 
           />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/products" element={<Navigate to="/shop" replace />} />
         </Routes>
         {error ? <p className="status-message status-message--warning">{error}</p> : null}
       </main>

@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 const navLinks = [
   { id: 'home', href: '/', label: 'Home' },
-  { id: 'products', href: '/products', label: 'Products' },
+  { id: 'products', href: '/shop', label: 'Products' },
   { id: 'orders', href: '/orders', label: 'Orders' },
   { id: 'about', href: '/about', label: 'About' }
 ];
