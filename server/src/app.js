@@ -23,8 +23,6 @@ app.get("/", (req, res) => {
 });
 
 app.use('/api', router);
-// Vercel serverless may forward paths without the /api prefix
-app.use(router);
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
