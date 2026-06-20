@@ -1,0 +1,10 @@
+# Goal: execute a full pick-and-place order.
+OrderTask order
+---
+# Result: final outcome of the order execution.
+bool success
+string final_state     # completed | failed | cancelled
+string message
+---
+# Feedback: streamed for every execution step.
+TaskFeedback feedback

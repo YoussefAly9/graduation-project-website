@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>grocery_robot_bridge</name>
+  <version>1.0.0</version>
+  <description>
+    ROS 2 bridge between the smart-grocery website backend (REST API) and the
+    robot system. Pulls order tasks from the backend, publishes them to ROS 2,
+    drives the pick-and-place action, and relays execution feedback back to the
+    website. Includes a simulated robot executor for demos/tests.
+  </description>
+  <maintainer email="team@example.com">Graduation Project Team</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>grocery_robot_interfaces</exec_depend>
+  <exec_depend>python3-requests</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

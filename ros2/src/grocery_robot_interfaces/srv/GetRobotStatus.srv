@@ -1,0 +1,5 @@
+# Request the current status of a robot.
+string robot_id
+---
+RobotStatus status
+bool success

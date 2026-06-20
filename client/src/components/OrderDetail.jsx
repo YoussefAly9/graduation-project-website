@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchOrderById, cancelOrder, modifyOrder, updateDeliveryTracking, fetchOrderTimeline } from '@/services/orderService.js';
+import { sendOrderToRobot } from '@/services/robotService.js';
+import RobotTracker from '@/components/RobotTracker.jsx';
 import useToast from '@/hooks/useToast.js';
 
 const OrderDetail = ({ orderId, onClose, onUpdate }) => {
@@ -53,6 +55,17 @@ const OrderDetail = ({ orderId, onClose, onUpdate }) => {
       if (onUpdate) onUpdate();
     } catch (err) {
       showError(err.response?.data?.message || 'Failed to cancel order');
+    }
+  };
+
+  const handleSendToRobot = async () => {
+    try {
+      const result = await sendOrderToRobot(orderId);
+      success(result?.duplicate ? 'Order already queued for the robot' : 'Order sent to robot');
+      await loadOrderData();
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      showError(err.response?.data?.message || 'Failed to send order to robot');
     }
   };
 
@@ -187,6 +200,12 @@ const OrderDetail = ({ orderId, onClose, onUpdate }) => {
               </table>
             </div>
 
+            {/* Robot Fulfillment (ROS 2) */}
+            <div className="order-detail-section">
+              <h3>Robot Fulfillment</h3>
+              <RobotTracker orderId={orderId} />
+            </div>
+
             {/* Delivery Tracking */}
             {isDelivery && order.delivery && (
               <div className="order-detail-section">
@@ -239,6 +258,11 @@ const OrderDetail = ({ orderId, onClose, onUpdate }) => {
 
             {/* Actions */}
             <div className="order-detail-actions">
+              {['pending', 'queued'].includes(order.status) && (
+                <button className="btn btn-primary" onClick={handleSendToRobot}>
+                  Send to Robot
+                </button>
+              )}
               {canCancel && (
                 <button className="btn btn-danger" onClick={() => setShowCancelModal(true)}>
                   Cancel Order

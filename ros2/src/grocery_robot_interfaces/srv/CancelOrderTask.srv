@@ -1,0 +1,6 @@
+# Ask the robot to cancel an in-flight order task.
+string order_id
+string reason
+---
+bool success
+string message

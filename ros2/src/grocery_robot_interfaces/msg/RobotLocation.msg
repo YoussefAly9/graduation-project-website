@@ -1,0 +1,7 @@
+# Current robot pose / logical location.
+string robot_id
+float64 x
+float64 y
+float64 theta
+string zone
+string label           # e.g. "Aisle A - Shelf 3"

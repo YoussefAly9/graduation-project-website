@@ -71,6 +71,42 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'RobotTask'
     },
+    // --- Robot / ROS 2 execution tracking (mirrors the active RobotTask) ---
+    robotTaskId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'RobotTask'
+    },
+    robotStatus: {
+      type: String,
+      enum: [
+        'pending',
+        'sent',
+        'accepted',
+        'rejected',
+        'navigating',
+        'product_found',
+        'picking',
+        'placing',
+        'completed',
+        'failed',
+        'cancelled'
+      ],
+      default: 'pending'
+    },
+    assignedRobotId: {
+      type: String,
+      trim: true
+    },
+    currentStep: {
+      type: String,
+      trim: true
+    },
+    startedAt: Date,
+    completedAt: Date,
+    failureReason: {
+      type: String,
+      trim: true
+    },
     notes: {
       type: String,
       trim: true

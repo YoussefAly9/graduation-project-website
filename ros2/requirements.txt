@@ -1,0 +1,3 @@
+# Python deps for the REST simulator and the ROS 2 bridge node.
+# (rclpy itself comes from your ROS 2 installation, not pip.)
+requests>=2.31.0
