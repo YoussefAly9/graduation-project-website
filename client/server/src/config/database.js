@@ -11,6 +11,13 @@ mongoose.connection.on('error', (error) => {
 });
 
 let connectionPromise = null;
+let lastConnectionError = null;
+
+export const getDbDiagnostics = () => ({
+  hasMongoUri: Boolean(process.env.MONGODB_URI),
+  readyState: mongoose.connection.readyState,
+  lastError: lastConnectionError
+});
 
 const connectDatabase = async () => {
   const { MONGODB_URI } = process.env;
@@ -35,11 +42,13 @@ const connectDatabase = async () => {
       .then((conn) => {
         // eslint-disable-next-line no-console
         console.log('MongoDB connected successfully');
+        lastConnectionError = null;
         return conn.connection;
       })
       .catch((error) => {
         // eslint-disable-next-line no-console
         console.error('MongoDB connection error:', error.message);
+        lastConnectionError = error.message;
         connectionPromise = null;
         return null;
       });
