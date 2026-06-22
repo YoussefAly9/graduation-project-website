@@ -22,6 +22,16 @@ app.get("/", (req, res) => {
   });
 });
 
+// On Vercel, cold starts must finish DB connect + seed before writes (e.g. checkout).
+app.use('/api', async (req, res, next) => {
+  try {
+    await ensureReady();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.use('/api', router);
 
 app.use((err, req, res, next) => {

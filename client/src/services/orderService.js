@@ -1,16 +1,43 @@
 import apiClient from './apiClient.js';
 
-export const createOrder = async ({ items, customer, deliveryMethod = 'pickup', channel = 'web', notes, specialInstructions }) => {
-  const response = await apiClient.post('/orders', {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableOrderError = (error) => {
+  const status = error.response?.status;
+  return !error.response || status === 503 || status === 502 || status === 504 || status === 429;
+};
+
+export const createOrder = async (
+  { items, customer, deliveryMethod = 'pickup', channel = 'web', notes, specialInstructions },
+  { maxAttempts = 4 } = {}
+) => {
+  const payload = {
     items,
     customer,
     deliveryMethod,
     channel,
     notes,
     specialInstructions
-  });
+  };
 
-  return response.data.data;
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await apiClient.post('/orders', payload, { timeout: 30000 });
+      return response.data.data;
+    } catch (error) {
+      lastError = error;
+
+      if (!isRetryableOrderError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+
+      await sleep(1200 * attempt);
+    }
+  }
+
+  throw lastError;
 };
 
 export const fetchOrders = async (params = {}) => {
@@ -68,5 +95,3 @@ export const fetchOrderTimeline = async (id) => {
   const response = await apiClient.get(`/orders/${id}/timeline`);
   return response.data.data;
 };
-
-

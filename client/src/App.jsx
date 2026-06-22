@@ -24,6 +24,7 @@ import { allFallback, featuredFallback, popularFallback } from '@/data/products.
 import { categories as categoryList } from '@/data/categories.js';
 import { fetchProducts } from '@/services/productService.js';
 import { createOrder, fetchOrders } from '@/services/orderService.js';
+import { warmUpApi } from '@/services/healthService.js';
 import useToast from '@/hooks/useToast.js';
 
 function AppContent() {
@@ -48,6 +49,7 @@ function AppContent() {
   const [deliveryOptions, setDeliveryOptions] = useState(null);
   const [showAddressManager, setShowAddressManager] = useState(false);
   const [showDeliveryOptions, setShowDeliveryOptions] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   
   // Toast notifications
   const { toasts, success, error: showError, removeToast } = useToast();
@@ -59,6 +61,9 @@ function AppContent() {
 
   useEffect(() => {
     let isMounted = true;
+
+    // Wake the Vercel serverless function and connect MongoDB before checkout.
+    warmUpApi();
 
     const loadProducts = async () => {
       try {
@@ -230,6 +235,10 @@ function AppContent() {
   );
 
   const handleCheckout = async () => {
+    if (isCheckingOut) {
+      return;
+    }
+
     const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
 
     if (!selectedAddress || !deliveryOptions) {
@@ -280,6 +289,7 @@ function AppContent() {
       .join('\n');
 
     try {
+      setIsCheckingOut(true);
       const { order } = await createOrder({
         items: orderItems,
         customer: {
@@ -300,7 +310,16 @@ function AppContent() {
       navigate('/orders');
     } catch (err) {
       console.error('Checkout failed:', err);
-      showError('Could not place order. Make sure the server is running and try again.');
+      const apiMessage = err.response?.data?.message;
+      if (err.response?.status === 503) {
+        showError(apiMessage || 'Database is still connecting. Please wait a moment and try again.');
+      } else if (apiMessage) {
+        showError(apiMessage);
+      } else {
+        showError('Could not place order. Please check your connection and try again.');
+      }
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -360,6 +379,7 @@ function AppContent() {
                 onEditAddress={() => setShowAddressManager(true)}
                 onEditDelivery={() => setShowDeliveryOptions(true)}
                 onCheckout={handleCheckout}
+                isCheckingOut={isCheckingOut}
                 onRemoveItem={handleRemoveFromCart}
                 onUpdateQuantity={handleUpdateCartQuantity}
               />
@@ -387,6 +407,7 @@ function AppContent() {
         items={cartItems}
         total={cartTotal}
         onCheckout={handleCheckout}
+        isCheckingOut={isCheckingOut}
         deliveryAddress={selectedAddress}
         deliveryOptions={deliveryOptions}
         onEditAddress={() => setShowAddressManager(true)}

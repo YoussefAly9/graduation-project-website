@@ -13,6 +13,7 @@ function CartPage({
   onEditAddress,
   onEditDelivery,
   onCheckout,
+  isCheckingOut = false,
   onRemoveItem,
   onUpdateQuantity
 }) {
@@ -230,12 +231,14 @@ function CartPage({
               
               <button
                 className="btn btn-primary btn-checkout"
-                disabled={!deliveryAddress || !deliveryOptions}
+                disabled={!deliveryAddress || !deliveryOptions || isCheckingOut}
                 onClick={onCheckout}
               >
-                {!deliveryAddress || !deliveryOptions 
-                  ? 'Complete Delivery Details' 
-                  : 'Proceed to Checkout'}
+                {isCheckingOut
+                  ? 'Placing order...'
+                  : !deliveryAddress || !deliveryOptions 
+                    ? 'Complete Delivery Details' 
+                    : 'Proceed to Checkout'}
               </button>
               
               <button

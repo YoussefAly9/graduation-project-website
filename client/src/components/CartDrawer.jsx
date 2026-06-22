@@ -5,7 +5,8 @@ const CartDrawer = ({
   onClose, 
   items, 
   total, 
-  onCheckout, 
+  onCheckout,
+  isCheckingOut = false,
   deliveryAddress,
   deliveryOptions,
   onEditAddress,
@@ -184,12 +185,14 @@ const CartDrawer = ({
           <button
             type="button"
             className="btn cart-drawer__checkout"
-            disabled={items.length === 0 || !deliveryAddress || !deliveryOptions}
+            disabled={items.length === 0 || !deliveryAddress || !deliveryOptions || isCheckingOut}
             onClick={onCheckout}
           >
-            {!deliveryAddress || !deliveryOptions 
-              ? 'Complete Delivery Details' 
-              : 'Proceed to Checkout'}
+            {isCheckingOut
+              ? 'Placing order...'
+              : !deliveryAddress || !deliveryOptions 
+                ? 'Complete Delivery Details' 
+                : 'Proceed to Checkout'}
           </button>
         </footer>
       </aside>
